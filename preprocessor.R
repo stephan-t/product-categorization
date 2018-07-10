@@ -9,7 +9,7 @@ library(SnowballC) # Stemming
 
 
 # Import data
-products <- read.csv("flipkart_com-ecommerce_sample.csv")
+products <- read.csv("data/flipkart.csv")
 
 # Create data frame with name and category columns
 prod <- products[,4:5]
