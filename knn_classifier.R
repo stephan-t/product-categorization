@@ -5,15 +5,16 @@
 library(class)
 source("preprocessor.R")
 
-# Run preprocessor (param: randomize, sparsity)
-preprocess(FALSE, 0.999)
+# Run preprocessor (param: random seed, train size, sparsity)
+preprocess(100, .8, 0.999)
 
-start.time <- Sys.time()
 
 # Predict class labels
+time.start <- Sys.time()
 knn.pred <- knn(dtm.train.df[,names(dtm.train.df) != "category"],
                 dtm.test.df[, names(dtm.test.df) != "category"], 
                 dtm.train.df$category, k=1) # Test different k
+(time.end <- Sys.time() - time.start)
 
 # Create data frame of predicted and actual class labels
 knn.pred.df <- data.frame(name=prod.test$name)
@@ -28,6 +29,3 @@ table(knn.pred.df$actual, factor(knn.pred), dnn=c("Actual","Predicted"))
 
 # Calculate accuracy
 nrow(knn.pred.df[which(knn.pred.df$predict == knn.pred.df$actual),]) / nrow(knn.pred.df)
-
-end.time <- Sys.time()
-end.time - start.time

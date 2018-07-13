@@ -2,8 +2,8 @@
 # Preprocessor
 #---------------------------------------------
 
-install.packages("tm")
-install.packages("SnowballC")
+# install.packages("tm")
+# install.packages("SnowballC")
 library(tm)        # Text mining
 library(SnowballC) # Stemming
 
@@ -30,16 +30,18 @@ prod <- prod[(grep('.*"]', prod$category, invert = TRUE)),]
 rownames(prod) <- 1:nrow(prod)
 
 # Function to run from each classifier
-preprocess <<- function(rand, spar) { # <------------ Re-run after updates
+preprocess <<- function(seed, train.size, spar) { # <------------ Re-run after updates
 
-  # Randomize dataset
-  if (rand == TRUE) {
-    prod <<- prod[sample(nrow(prod)),]
-  }
-    
+  # Set seed for reproducible random samples
+  set.seed(seed)
+  
+  # Set training sample size
+  indexes <- sample(1:nrow(prod), floor(nrow(prod) * train.size))
+  
   # Create training and testing sets
-  prod.train <<- prod[1:8000,]
-  prod.test <<- prod[8001:10000,]
+  # (Note: increasing training/testing sizes requires increasing sparsity)
+  prod.train <<- prod[indexes,]
+  prod.test <<- prod[-indexes,]
   
   #---------------------------------------------
   # Perform text processing & feature extraction
@@ -62,7 +64,8 @@ preprocess <<- function(rand, spar) { # <------------ Re-run after updates
     corp <- tm_map(corp, stripWhitespace)
     corp <- tm_map(corp, removeWords, stopwords("english"))
     corp <- tm_map(corp, stemDocument, language = "english")
-    corp <- tm_map(corp, removeWords, c("black","blue","white","yellow","men","women","boy","girl"))
+    # corp <- tm_map(corp, removeWords, c("black","blue","white","yellow","men",
+    #                                     "women","boy","girl"))
     corp <- tm_map(corp, content_transformer(uniqueWords))
     return(corp)
   }
