@@ -1,7 +1,7 @@
-# Request query
-query <- readline(prompt = "Enter a product name: ")
-model <- readline(prompt = "Enter a predictive model (nb/dt/knn): ")
-predict.query(query, model)
+library(SnowballC)
+library(e1071)
+library(rpart)
+library(class)
 
 
 predict.query <- function(query, model) {
@@ -27,11 +27,18 @@ predict.query <- function(query, model) {
   } else if (model == "nb") {
     result <- predict(nb.model, query.df[,names(query.df) != "category"])
   } else if (model == "knn") {
+    k <- as.numeric(readline("Enter number of nearest neighbours (k): "))
     result <- knn(dtm.train.df[,names(dtm.train.df) != "category"],
                   query.df[,names(query.df) != "category"], 
-                  dtm.train.df$category, k=1) # Test different k
+                  dtm.train.df$category, k=k)
   }
-  print(noquote(paste("Recommended category: ", result)))
-  print(noquote("Terms in vocabulary:"))
-  print(colnames(query.df)[which(query.df == 1)])
+  cat("Recommended category: ", as.character(result))
+  cat("\n")
+  cat("Terms in vocabulary:", colnames(query.df)[which(query.df == 1)])
 }
+
+
+# Request query
+query <- readline(prompt = "Enter product name: ")
+model <- readline(prompt = "Enter predictive model (nb/dt/knn): ")
+predict.query(query, model)
