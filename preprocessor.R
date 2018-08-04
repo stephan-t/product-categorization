@@ -1,6 +1,4 @@
-#---------------------------------------------
-# Preprocessor
-#---------------------------------------------
+#### Preprocessor ####
 
 # install.packages("tm")
 # install.packages("SnowballC")
@@ -8,48 +6,33 @@ library(tm)        # Text mining
 library(SnowballC) # Stemming
 
 
-# Import data
-products <- read.csv("data/flipkart.csv")
-
-# Create data frame with name and category columns
-prod <- products[,4:5]
-colnames(prod) <- c("name","category")
-
-# Remove duplicates
-prod <- unique(prod)
-
-# Extract top category
-prod$category <- gsub('(\\["| >>.*)', "", prod$category)
-prod$category <- as.factor(prod$category)
-
-# Rename unknown categories
-# prod$category <- gsub('.*"]', "Unknown", prod$category)
-
-# Remove unknown categories
-prod <- prod[(grep('.*"]', prod$category, invert = TRUE)),]
-rownames(prod) <- 1:nrow(prod)
-
-# Function to run from each classifier
-preprocess <<- function(seed, train.size, spar) { # <------------ Re-run after updates
-
-  # Set seed for reproducible random samples
-  set.seed(seed)
+# Preprocess function to run from each classifier
+preprocess <- function(sparsity) {
+  time.start <- Sys.time()
   
-  # Set training sample size
-  indexes <- sample(1:nrow(prod), floor(nrow(prod) * train.size))
+  # Import data
+  data <- read.csv("data/flipkart.csv")
   
-  # Create training and testing sets
-  # (Note: increasing training/testing sizes requires increasing sparsity)
-  prod.train <<- prod[indexes,]
-  prod.test <<- prod[-indexes,]
+  # Create data frame with name and category columns
+  data <- data[, 4:5]
+  colnames(data) <- c("name","category")
   
-  #---------------------------------------------
-  # Perform text processing & feature extraction
-  #---------------------------------------------
+  # Remove duplicates
+  data <- unique(data)
   
-  # Create corpora
-  corp.train <- VCorpus(VectorSource(prod.train$name))
-  corp.test <- VCorpus(VectorSource(prod.test$name))
+  # Extract top category
+  data$category <- gsub('(\\["| >>.*)', "", data$category)
+  data$category <- as.factor(data$category)
+  
+  # Remove unknown categories
+  data <- data[(grep('.*"]', data$category, invert = TRUE)),]
+  rownames(data) <- 1:nrow(data)
+
+  
+  #### Text Processing ####
+  
+  # Create corpus
+  data.corp <- VCorpus(VectorSource(data$name))
   
   # Function to count words once
   uniqueWords <- function(word) {
@@ -57,45 +40,33 @@ preprocess <<- function(seed, train.size, spar) { # <------------ Re-run after u
   }
   
   # Process text
-  process.text <- function(corp) {
-    corp <- tm_map(corp, content_transformer(tolower))
-    corp <- tm_map(corp, removePunctuation)
-    corp <- tm_map(corp, removeNumbers)
-    corp <- tm_map(corp, stripWhitespace)
-    corp <- tm_map(corp, removeWords, stopwords("english"))
-    corp <- tm_map(corp, stemDocument, language = "english")
-    # corp <- tm_map(corp, removeWords, c("black","blue","white","yellow","men",
-    #                                     "women","boy","girl"))
-    corp <- tm_map(corp, content_transformer(uniqueWords))
-    return(corp)
-  }
-  corp.train <- process.text(corp.train)
-  corp.test <- process.text(corp.test)
-    
+  data.corp <- tm_map(data.corp, content_transformer(tolower))
+  data.corp <- tm_map(data.corp, removePunctuation)
+  data.corp <- tm_map(data.corp, removeNumbers)
+  data.corp <- tm_map(data.corp, stripWhitespace)
+  data.corp <- tm_map(data.corp, removeWords, stopwords("english"))
+  data.corp <- tm_map(data.corp, stemDocument, language = "english")
+  # data.corp <- tm_map(data.corp, removeWords, c("black","blue","white","yellow","men",
+  #                                     "women","boy","girl"))
+  data.corp <- tm_map(data.corp, content_transformer(uniqueWords))
+
   # Create document term matrix
-  dtm.train <- DocumentTermMatrix(corp.train)
+  data.dtm <- DocumentTermMatrix(data.corp)
   
   # Reduce size of DTM by removing less frequent terms
-  dtm.train <- removeSparseTerms(dtm.train, spar)
+  data.dtm <- removeSparseTerms(data.dtm, sparsity)
   
-  # Make test set have same columns as training set
-  dtm.test <- DocumentTermMatrix(corp.test, control = list
-                                (dictionary=Terms(dtm.train), wordLengths = c(3,10)))
+  # Convert DTM to data frame and append product names and class
+  data.df <- data.frame(as.matrix(data.dtm))
+  data.df <- cbind(name = data$name, data.df)
+  data.df <- cbind(data.df, category = data$category)
   
-  # Create data frame and add class label
-  dtm.train.df <<- data.frame(as.matrix(dtm.train))
-  dtm.test.df <<- data.frame(as.matrix(dtm.test))
-  dtm.train.df <<- cbind(dtm.train.df, category=prod.train[, "category"])
-  dtm.test.df <<- cbind(dtm.test.df, category=prod.test[, "category"])
-  
-  # Change columns from numeric to binary factor
-  dtm.train.df[,names(dtm.train.df) != "category"] <<-
-    lapply(dtm.train.df[,names(dtm.train.df) != "category"], factor)
-  dtm.test.df[,names(dtm.test.df) != "category"] <<-
-    lapply(dtm.test.df[,names(dtm.test.df) != "category"], factor, levels = c("0","1"))
-  
-  # Update class label factor levels
-  dtm.train.df$category <<- factor(dtm.train.df$category)
-  dtm.test.df$category <<- factor(dtm.test.df$category)
+  # Change term columns from numeric to factor
+  data.df[, -c(1, ncol(data.df))] <- lapply(data.df[, -c(1, ncol(data.df))], factor)
 
+  # Update class label factor levels
+  data.df$category <- factor(data.df$category)
+  
+  print(time.end <- Sys.time() - time.start)
+  return(data.df)
 }
