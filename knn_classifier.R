@@ -1,31 +1,63 @@
-#---------------------------------------------
-# K-Nearest Neighbours Classifier
-#---------------------------------------------
+#### k-Nearest Neighbours Classifier ####
 
 library(class)
 source("preprocessor.R")
+source("functions.R")
 
-# Run preprocessor (param: random seed, train size, sparsity)
-preprocess(100, .8, 0.999)
+# Preprocess data using specified sparsity
+# data <- preprocess(0.999)
 
 
-# Predict class labels
+#### Classification ####
+
+# Train and test model using k-fold cross-validation
+set.seed(100)
+data.rand <- data[sample(1:nrow(data)),]  # Randomize data set
+k <- 5  # Number of folds
+fold <- round(nrow(data.rand) / k, 0)  # Size of fold
+idx.head <- 0
+idx.tail <- fold
+
+# Initialize confusion matrix
+category <- factor(c(), levels = levels(data$category))
+knn.cm <- table(category, category, dnn = c("Actual","Predicted"))
+
+# Set fold in iteration i as test set and remaining folds as training set
 time.start <- Sys.time()
-knn.pred <- knn(dtm.train.df[,names(dtm.train.df) != "category"],
-                dtm.test.df[, names(dtm.test.df) != "category"], 
-                dtm.train.df$category, k=1) # Test different k
-(time.end <- Sys.time() - time.start)
+for (i in 1:k) {
+  idx.head <- idx.head + 1
+  idx.tail <- fold * i
+  idx <- idx.head:idx.tail
+  
+  # Split data for training and testing
+  data.test <- na.omit(data.rand[idx,])
+  data.train <- data.rand[-idx,]
+  
+  # Predict class labels
+  knn.pred <- knn(data.train[, -c(1, ncol(data.train))], data.test[, -c(1, ncol(data.test))],
+                  data.train$category, k=3)
+  
+  
+  #### Evaluation ####
+  
+  # Create data frame of predicted and actual class labels
+  knn.pred.df <- data.frame(name=data.test[, 1])
+  knn.pred.df <- cbind(knn.pred.df, actual = data.test$category)
+  knn.pred.df <- cbind(knn.pred.df, predict = knn.pred)
+  
+  # Create data frame of misclassified objects
+  # knn.misclass <- knn.pred.df[which(knn.pred.df$predict != knn.pred.df$actual),]
+  
+  # Sum confusion matrix results
+  knn.cm <- knn.cm + table(knn.pred.df$actual, knn.pred.df$predict, dnn = c("Actual","Predicted"))
+  
+  # Set current fold's tail as next fold's head 
+  idx.head <- idx.tail
+}
+print(time.end <- Sys.time() - time.start)
 
-# Create data frame of predicted and actual class labels
-knn.pred.df <- data.frame(name=prod.test$name)
-knn.pred.df <- cbind(knn.pred.df, actual=as.character(dtm.test.df$category), stringsAsFactors = FALSE)
-knn.pred.df <- cbind(knn.pred.df, predict=as.character(knn.pred), stringsAsFactors = FALSE)
-
-# Create data frame of misclassified objects
-knn.misclass <- knn.pred.df[which(knn.pred.df$predict != knn.pred.df$actual),]
-
-# Show confusion matrix
-table(knn.pred.df$actual, factor(knn.pred), dnn=c("Actual","Predicted"))
+# Plot confusion matrix
+plot.cm(knn.cm, title = "Confusion Matrix of k-Nearest Neighbours")
 
 # Calculate accuracy
-nrow(knn.pred.df[which(knn.pred.df$predict == knn.pred.df$actual),]) / nrow(knn.pred.df)
+cat("Accuracy:", sum(diag(knn.cm))/sum(knn.cm))

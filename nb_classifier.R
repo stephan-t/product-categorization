@@ -1,35 +1,70 @@
-#---------------------------------------------
-# Naive Bayes Classifier
-#---------------------------------------------
+#### Naive Bayes Classifier ####
 
 # install.packages("e1071")
 library(e1071)
 source("preprocessor.R")
+source("functions.R")
 
-# Run preprocessor (param: random seed, train size, sparsity)
-preprocess(100, .8, 0.99999)
+# Preprocess data using specified sparsity
+# data <- preprocess(0.9999)
 
 
-# Create model
+#### Classification ####
+
+# Train and test model using k-fold cross-validation
+set.seed(100)
+data.rand <- data[sample(1:nrow(data)),]  # Randomize data set
+k <- 5  # Number of folds
+fold <- round(nrow(data.rand) / k, 0)  # Size of fold
+idx.head <- 0
+idx.tail <- fold
+
+# Initialize confusion matrix
+category <- factor(c(), levels = levels(data$category))
+nb.cm <- table(category, category, dnn = c("Actual","Predicted"))
+
+# Set fold in iteration i as test set and remaining folds as training set
 time.start <- Sys.time()
-nb.model <- naiveBayes(category ~ ., dtm.train.df)
-(time.end <- Sys.time() - time.start)
+for (i in 1:k) {
+  idx.head <- idx.head + 1
+  idx.tail <- fold * i
+  idx <- idx.head:idx.tail
+  
+  # Split data for training and testing
+  data.test <- na.omit(data.rand[idx,])
+  data.train <- data.rand[-idx,]
+  
+  # Build model
+  nb.model <- naiveBayes(category ~ ., data.train[, -1])
+  
+  # Predict class labels
+  nb.pred <- predict(nb.model, data.test[, -c(1, ncol(data.test))])
+  
+  
+  #### Evaluation ####
+  
+  # Create data frame of predicted and actual class labels
+  nb.pred.df <- data.frame(name=data.test[, 1])
+  nb.pred.df <- cbind(nb.pred.df, actual = data.test$category)
+  nb.pred.df <- cbind(nb.pred.df, predict = nb.pred)
+  
+  # Create data frame of misclassified objects
+  # nb.misclass <- nb.pred.df[which(nb.pred.df$predict != nb.pred.df$actual),]
+  
+  # Sum confusion matrix results
+  nb.cm <- nb.cm + table(nb.pred.df$actual, nb.pred.df$predict, dnn = c("Actual","Predicted"))
+  
+  # Set current fold's tail as next fold's head 
+  idx.head <- idx.tail
+}
+print(time.end <- Sys.time() - time.start)
 
-# Predict class labels
-time.start <- Sys.time()
-nb.pred <- predict(nb.model, dtm.test.df[,names(dtm.test.df) != "category"])
-(time.end <- Sys.time() - time.start)
-
-# Create data frame of predicted and actual class labels
-nb.pred.df <- data.frame(name=prod.test$name)
-nb.pred.df <- cbind(nb.pred.df, actual=as.character(dtm.test.df$category), stringsAsFactors = FALSE)
-nb.pred.df <- cbind(nb.pred.df, predict=as.character(nb.pred), stringsAsFactors = FALSE)
-
-# Create data frame of misclassified objects
-nb.misclass <- nb.pred.df[which(nb.pred.df$predict != nb.pred.df$actual),]
-
-# Show confusion matrix
-table(nb.pred.df$actual, factor(nb.pred), dnn=c("Actual","Predicted"))
+# Plot confusion matrix
+plot.cm(nb.cm, title = "Confusion Matrix of Naive Bayes")
 
 # Calculate accuracy
-nrow(nb.pred.df[which(nb.pred.df$predict == nb.pred.df$actual),]) / nrow(nb.pred.df)
+cat("Accuracy:", sum(diag(nb.cm))/sum(nb.cm))
+
+
+# Build final model using all data
+# nb.model <- naiveBayes(category ~ ., data[, -1])
