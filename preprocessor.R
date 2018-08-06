@@ -2,9 +2,10 @@
 
 # install.packages("tm")
 # install.packages("SnowballC")
+# install.packages("RWeka")
 library(tm)        # Text mining
 library(SnowballC) # Stemming
-
+# library(RWeka)     # n-grams
 
 # Preprocess function to run from each classifier
 preprocess <- function(sparsity) {
@@ -50,7 +51,11 @@ preprocess <- function(sparsity) {
   #                                     "women","boy","girl"))
   data.corp <- tm_map(data.corp, content_transformer(uniqueWords))
 
-  # Create document term matrix
+  # Create document term matrix with 2-gram features
+  # BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+  # data.dtm <- DocumentTermMatrix(data.corp, control = list(tokenize = BigramTokenizer))
+ 
+  # Create document term matrix with 1-gram features
   data.dtm <- DocumentTermMatrix(data.corp)
   
   # Reduce size of DTM by removing less frequent terms
