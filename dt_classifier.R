@@ -5,8 +5,8 @@ library(rpart)
 source("preprocessor.R")
 source("functions.R")
 
-# Preprocess data using specified sparsity
-data <- preprocess(0.99999)
+# Preprocess data using specified DTM sparsity
+data <- preprocess(0.999)
 
 
 #### Classification ####
@@ -20,7 +20,7 @@ idx.head <- 0
 idx.tail <- fold
 
 # Initialize confusion matrix
-category <- factor(c(), levels = sort(unique(data$category)))
+category <- factor(c(), levels = levels(data$category))
 dt.cm <- table(category, category, dnn = c("Actual","Predicted"))
 
 # Set fold in iteration i as test set and remaining folds as training set
@@ -31,7 +31,7 @@ for (i in 1:k) {
   idx <- idx.head:idx.tail
   
   # Split data for training and testing
-  data.test <- data.rand[idx,]
+  data.test <- na.omit(data.rand[idx,])
   data.train <- data.rand[-idx,]
 
   # Build model
