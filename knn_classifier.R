@@ -4,8 +4,8 @@ library(class)
 source("preprocessor.R")
 source("functions.R")
 
-# Preprocess data using specified sparsity
-# data <- preprocess(0.999)
+# Preprocess data using specified DTM sparsity
+data <- preprocess(sparsity = 0.999)
 
 
 #### Classification ####
@@ -48,7 +48,7 @@ for (i in 1:k) {
   # Create data frame of misclassified objects
   # knn.misclass <- knn.pred.df[which(knn.pred.df$predict != knn.pred.df$actual),]
   
-  # Sum confusion matrix results
+  # Sum confusion matrices
   knn.cm <- knn.cm + table(knn.pred.df$actual, knn.pred.df$predict, dnn = c("Actual","Predicted"))
   
   # Set current fold's tail as next fold's head 
@@ -60,4 +60,5 @@ print(time.end <- Sys.time() - time.start)
 plot.cm(knn.cm, title = "Confusion Matrix of k-Nearest Neighbours")
 
 # Calculate accuracy
-cat("Accuracy:", sum(diag(knn.cm))/sum(knn.cm))
+knn.accu <- sum(diag(knn.cm))/sum(knn.cm)
+cat("Accuracy:", knn.accu)

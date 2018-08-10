@@ -32,17 +32,44 @@ query.predict <- function(query, model) {
     k <- as.numeric(readline("Enter number of nearest neighbours (k): "))
     result <- knn(data[, -c(1, ncol(data))], query.df, data$category, k = k)
   }
+  result <- as.character(result)
   
-  # Find matched query terms in vocabulary
+  # Calculate percent of matched vocabulary terms in query
   vocab.term <- colnames(query.df)[colnames(query.df) %in% colnames(data) & query.df[1,] == 1]
   query.term <- strsplit(query.in, " ")
+  match <- (length(vocab.term) / length(query.term[[1]]))
+  
+  # Calculate evaluation metrics
+  if (model == "dt") {
+    accu <- dt.accu
+    cm <- dt.cm
+  } else if (model == "nb") {
+    accu <- nb.accu
+    cm <- nb.cm
+  } else if (model == "knn") {
+    accu <- knn.accu
+    cm <- knn.cm
+  }
+  precis <- cm[result, result] / sum(cm[,result])
+  recall <- cm[result, result] / sum(cm[result,])  
+  
+  # Calculate average score
+  score <- (match + accu + precis + recall) / 4
   
   # Print results
-  cat("Recommended category:", as.character(result))
+  cat("Recommended category:", "\t", result)
   cat("\n")
-  cat("Terms in vocabulary:", vocab.term)
+  cat("Terms in vocabulary:", "\t", vocab.term)
   cat("\n")
-  cat("Term match:", (length(vocab.term) / length(query.term[[1]])))
+  cat("Term match:", "\t", "\t", match)
+  cat("\n")
+  cat("Accuracy of model:", "\t", accu)
+  cat("\n")
+  cat("Precision of class:", "\t", precis)
+  cat("\n")
+  cat("Recall of class:", "\t", recall)
+  cat("\n")
+  cat("Average score:", "\t", "\t", score)
 }
 
 

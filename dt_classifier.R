@@ -6,7 +6,7 @@ source("preprocessor.R")
 source("functions.R")
 
 # Preprocess data using specified DTM sparsity
-data <- preprocess(0.999)
+data <- preprocess(sparsity = 0.999)
 
 
 #### Classification ####
@@ -53,7 +53,7 @@ for (i in 1:k) {
   # Create data frame of misclassified objects
   # dt.misclass <- dt.pred.df[which(dt.pred.df$predict != dt.pred.df$actual),]
   
-  # Sum confusion matrix results
+  # Sum confusion matrices
   dt.cm <- dt.cm + table(dt.pred.df$actual, dt.pred.df$predict, dnn = c("Actual","Predicted"))
   
   # Set current fold's tail as next fold's head 
@@ -65,7 +65,8 @@ print(time.end <- Sys.time() - time.start)
 plot.cm(dt.cm, title = "Confusion Matrix of Decision Tree")
 
 # Calculate accuracy
-cat("Accuracy:", sum(diag(dt.cm))/sum(dt.cm))
+dt.accu <- sum(diag(dt.cm))/sum(dt.cm)
+cat("Accuracy:", dt.accu)
 
 
 # Build final model using all data

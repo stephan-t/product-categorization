@@ -5,8 +5,8 @@ library(e1071)
 source("preprocessor.R")
 source("functions.R")
 
-# Preprocess data using specified sparsity
-# data <- preprocess(0.9999)
+# Preprocess data using specified DTM sparsity
+data <- preprocess(sparsity = 0.999)
 
 
 #### Classification ####
@@ -51,7 +51,7 @@ for (i in 1:k) {
   # Create data frame of misclassified objects
   # nb.misclass <- nb.pred.df[which(nb.pred.df$predict != nb.pred.df$actual),]
   
-  # Sum confusion matrix results
+  # Sum confusion matrices
   nb.cm <- nb.cm + table(nb.pred.df$actual, nb.pred.df$predict, dnn = c("Actual","Predicted"))
   
   # Set current fold's tail as next fold's head 
@@ -63,8 +63,9 @@ print(time.end <- Sys.time() - time.start)
 plot.cm(nb.cm, title = "Confusion Matrix of Naive Bayes")
 
 # Calculate accuracy
-cat("Accuracy:", sum(diag(nb.cm))/sum(nb.cm))
+nb.accu <- sum(diag(nb.cm))/sum(nb.cm)
+cat("Accuracy:", nb.accu)
 
 
 # Build final model using all data
-# nb.model <- naiveBayes(category ~ ., data[, -1])
+nb.model <- naiveBayes(category ~ ., data[, -1])
