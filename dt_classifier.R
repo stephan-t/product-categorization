@@ -6,21 +6,21 @@ source("preprocessor.R")
 source("functions.R")
 
 # Preprocess data using specified DTM sparsity
-data <- preprocess(sparsity = 0.999)
+dt.data <- preprocess(sparsity = 0.999)
 
 
 #### Classification ####
 
 # Train and test model using k-fold cross-validation
 set.seed(100)
-data.rand <- data[sample(1:nrow(data)),]  # Randomize data set
+data.rand <- dt.data[sample(1:nrow(dt.data)),]  # Randomize data set
 k <- 5  # Number of folds
 fold <- round(nrow(data.rand) / k, 0)  # Size of fold
 idx.head <- 0
 idx.tail <- fold
 
 # Initialize confusion matrix
-category <- factor(c(), levels = levels(data$category))
+category <- factor(c(), levels = levels(dt.data$category))
 dt.cm <- table(category, category, dnn = c("Actual","Predicted"))
 
 # Set fold in iteration i as test set and remaining folds as training set
@@ -70,5 +70,5 @@ cat("Accuracy:", dt.accu)
 
 
 # Build final model using all data
-dt.model <- rpart(category ~ ., data[, -1], method="class",
+dt.model <- rpart(category ~ ., dt.data[, -1], method="class",
                   parms = list(split="information"), control = dt.ctrl)
