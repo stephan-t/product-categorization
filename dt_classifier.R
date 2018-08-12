@@ -3,7 +3,7 @@
 # install.packages("rpart")
 library(rpart)
 source("preprocessor.R")
-source("functions.R")
+source("plots.R")
 
 # Preprocess data using specified DTM sparsity
 dt.data <- preprocess(sparsity = 0.999)

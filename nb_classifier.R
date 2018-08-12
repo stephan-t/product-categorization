@@ -3,7 +3,7 @@
 # install.packages("e1071")
 library(e1071)
 source("preprocessor.R")
-source("functions.R")
+source("plots.R")
 
 # Preprocess data using specified DTM sparsity
 nb.data <- preprocess(sparsity = 0.9999)

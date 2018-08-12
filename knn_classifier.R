@@ -2,7 +2,7 @@
 
 library(class)
 source("preprocessor.R")
-source("functions.R")
+source("plots.R")
 
 # Preprocess data using specified DTM sparsity
 knn.data <- preprocess(sparsity = 0.999)
